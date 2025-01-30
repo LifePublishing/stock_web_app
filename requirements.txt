@@ -55,6 +55,7 @@ trio-websocket==0.11.1
 typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==1.26.15
+uvicorn==0.34.0
 w3lib==2.2.1
 waitress==3.0.2
 webencodings==0.5.1
