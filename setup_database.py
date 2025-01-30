@@ -4,7 +4,17 @@ import sqlite3
 conn = sqlite3.connect('stocks.db')
 cursor = conn.cursor()
 
-# 自社株買いテーブルの作成（カラム名を統一）
+# 📌 stocks テーブルの作成（このテーブルが fetch_stock_data.py で使用される）
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS stocks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL,
+    name TEXT NOT NULL,
+    target TEXT NOT NULL
+)
+''')
+
+# 📌 自社株買いテーブルの作成（カラム名を統一）
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS share_buyback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,7 +26,7 @@ CREATE TABLE IF NOT EXISTS share_buyback (
 )
 ''')
 
-# 上方修正テーブルの作成
+# 📌 上方修正テーブルの作成
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS upward_revision (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,7 +36,7 @@ CREATE TABLE IF NOT EXISTS upward_revision (
 )
 ''')
 
-# 株式分割テーブルの作成
+# 📌 株式分割テーブルの作成
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS stock_split (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

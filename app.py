@@ -1,21 +1,24 @@
 from flask import Flask, render_template
-import pandas as pd
+import sqlite3
 
 app = Flask(__name__)
 
-# CSVファイルを読み込んでデータを取得する関数
-def get_stock_data():
-    try:
-        df = pd.read_csv("kabutan_top_stocks.csv", encoding="utf-8-sig")
-        return df.to_dict(orient="records")  # 辞書形式でデータを返す
-    except FileNotFoundError:
-        return []  # ファイルがない場合は空リストを返す
+# 📌 データベースから銘柄情報を取得する関数
+def get_stocks():
+    conn = sqlite3.connect('stocks.db')
+    cursor = conn.cursor()
 
-# ルートページ（メインページ）
-@app.route("/")
+    cursor.execute("SELECT code, name, target FROM stocks")
+    stocks = cursor.fetchall()
+
+    conn.close()
+    return stocks
+
+# 📌 Webページを表示するルート
+@app.route('/')
 def index():
-    stocks = get_stock_data()
-    return render_template("index.html", stocks=stocks)
+    stocks = get_stocks()
+    return render_template('index.html', stocks=stocks)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

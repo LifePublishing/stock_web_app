@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
+import sqlite3
 
 # 取得対象URL（3Qの対通期進捗率ランキングページ）
 url = "https://kabutan.jp/tansaku/?mode=1_funda_05&market=0&capitalization=-1&stc=&stm=0&page=1"
@@ -20,10 +20,15 @@ soup = BeautifulSoup(response.text, "html.parser")
 # テーブルを取得
 table = soup.find("table", {"class": "stock_table"})
 
-# データを格納するリスト
-data = []
+# データベースに接続
+conn = sqlite3.connect("stocks.db")
+cursor = conn.cursor()
+
+# 既存のデータをクリア（毎回リフレッシュ）
+cursor.execute("DELETE FROM stocks")
 
 # テーブルが見つかった場合のみ処理
+data = []
 if table:
     for row in table.find_all("tr")[1:]:  # ヘッダー行を除く
         columns = row.find_all("td")
@@ -31,27 +36,31 @@ if table:
         if len(columns) < 9:  # データが少ない行はスキップ
             continue
 
-        # 銘柄コード
-        code = columns[0].text.strip()
-
-        # 銘柄名
-        name = columns[1].text.strip()
-
-        # 対通期進捗率（数値変換を試みる）
         try:
-            progress_rate = float(columns[7].text.strip())  # 数値型に変換
-        except ValueError:
-            continue  # 数値に変換できない場合はスキップ
+            # 銘柄コード（数値のみ取得）
+            code = columns[0].text.strip()
+            if not code.isdigit():  # 銘柄コードが数字でない場合はスキップ
+                continue
 
-        # 条件（対通期進捗率80%以上）を満たすものだけ追加
-        if progress_rate >= 80.0:
-            data.append([code, name, "上方修正狙い"])
+            # 銘柄名（余計なデータを取り除く）
+            name = columns[1].text.strip()
 
-# DataFrameに変換
-df = pd.DataFrame(data, columns=["銘柄コード", "銘柄名", "何狙いなのか"])
+            # 対通期進捗率（数値変換を試みる）
+            progress_rate = float(columns[7].text.strip())
 
-# CSVファイルとして保存
-df.to_csv("kabutan_top_stocks.csv", index=False, encoding="utf-8-sig")
+            # 条件（対通期進捗率80%以上）を満たすものだけ追加
+            if progress_rate >= 80.0:
+                data.append((code, name, "上方修正狙い"))
 
-# 結果を表示
-print(df)
+        except Exception as e:
+            print(f"データ処理中にエラー: {e}")
+            continue  # エラーがあっても処理を続行
+
+# データベースに保存
+cursor.executemany("INSERT INTO stocks (code, name, target) VALUES (?, ?, ?)", data)
+
+# データベースの変更を保存
+conn.commit()
+conn.close()
+
+print(f"{len(data)} 件のデータを取得し、保存しました！")
